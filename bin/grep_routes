@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+$:.unshift File.expand_path('../../lib/', __FILE__)
+require "grep_routes"
+
+
+gr = GrepRoutes.new('./config/routes.rb')
+gr.eval_routes
+$stdout.puts gr.formatted_routes
