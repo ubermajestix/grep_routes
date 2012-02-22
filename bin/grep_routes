@@ -2,8 +2,12 @@
 require 'rubygems'
 $:.unshift File.expand_path('../../lib/', __FILE__)
 require "grep_routes"
-
-
-gr = GrepRoutes.new('./config/routes.rb')
+path = './config/routes.rb'
+# path = './spec/fixtures/routes.rb'
+gr = GrepRoutes.new(path)
 gr.eval_routes
-$stdout.puts gr.formatted_routes
+if ARGV.any?
+  $stdout.puts gr.formatted_routes.select{|r| r.match ARGV[0]}
+else
+  $stdout.puts gr.formatted_routes
+end
