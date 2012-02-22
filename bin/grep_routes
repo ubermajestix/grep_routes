@@ -7,7 +7,9 @@ path = './config/routes.rb'
 gr = GrepRoutes.new(path)
 gr.eval_routes
 if ARGV.any?
-  $stdout.puts gr.formatted_routes.select{|r| r.match ARGV[0]}
+  gr.filter_routes(ARGV[0])
+  # colorize
+  puts gr.formatted_routes.map{|r| r.gsub!(ARGV[0], "\e[35m#{ARGV[0]}\e[0m")}
 else
   $stdout.puts gr.formatted_routes
 end

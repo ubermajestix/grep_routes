@@ -73,32 +73,29 @@ class GrepRoutes
   end
   
   def routes
-    route_set.routes
-  end
-  
-  def formatted_routes
-    return @formatted_routes if @formatted_routes
-    routes = route_set.routes.collect do |route|
-
+    return @routes if @routes
+    
+    @routes = route_set.routes.collect do |route|
       reqs = route.requirements.dup
       reqs[:to] = route.app unless route.app.class.name.to_s =~ /^ActionDispatch::Routing/
       reqs = reqs.empty? ? "" : reqs.inspect
-
       {:name => route.name.to_s, :verb => route.verb.to_s, :path => route.path, :reqs => reqs}
     end
-
      # Skip the route if it's internal info route
-    routes.reject! { |r| r[:path] =~ %r{/rails/info/properties|^/assets} }
-
+    @routes.reject! { |r| r[:path] =~ %r{/rails/info/properties|^/assets} }
+    return @routes
+  end
+  
+  def filter_routes(pattern)
+    @routes = routes.select{|r| "#{r[:name]} #{r[:verb]} #{r[:path]} #{r[:reqs]}".match pattern}
+  end
+  
+  def formatted_routes
     name_width = routes.map{ |r| r[:name].length }.max
     verb_width = routes.map{ |r| r[:verb].length }.max
     path_width = routes.map{ |r| r[:path].length }.max
     
-    # TODO write this to a file - only re-eval routes if the routes file has changed
-    # after this routes cache file has been created (check m-times)
-    # The command line interface will only grep through the cached routes file (and 
-    # pass all its options to grep)
-    @formatted_routes = routes.collect do |r|
+    routes.collect do |r|
       "#{r[:name].rjust(name_width)} #{r[:verb].ljust(verb_width)} #{r[:path].ljust(path_width)} #{r[:reqs]}"
     end
   end

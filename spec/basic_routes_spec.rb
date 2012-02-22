@@ -17,17 +17,16 @@ describe GrepRoutes do
     subject.route_set.must_be_kind_of ActionDispatch::Routing::RouteSet
   end
   
-  it "should the route set should be empty before we eval" do
-    subject.route_set.routes.must_be_empty
-  end
-  
   it "there should be routes after we eval the routes file" do
     subject.eval_routes
     subject.route_set.routes.wont_be_empty
   end
   
-  it "should print" do
+  
+  it "should filter routes" do
     subject.eval_routes
-    subject.print
+    subject.filter_routes('privacy')
+    subject.routes.length.must_equal 1
+    puts subject.formatted_routes
   end
 end
