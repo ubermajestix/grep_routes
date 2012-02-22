@@ -13,6 +13,7 @@ class GrepRoutes
   attr_reader :path_to_routes_file
   attr_reader :route_file
   attr_reader :class_name
+  attr_reader :pattern
   
   def initialize(path_to_routes_file)
     @path_to_routes_file = path_to_routes_file
@@ -22,8 +23,10 @@ class GrepRoutes
     self.init_rack_apps
   end
   
-  # only the last class needs to have #call defined on it but all the objects
-  # "above" it need to be defined as Modules - basically define the object heirarchy
+  # To make this fast we don't load your rails app or any of your gems.
+  # Instead we build YourRailsApp::Application class and define one method on it.
+  # The #routes method is almost the same as what Rails provides and once we eval
+  # the routes file, it will be filled up with your routes.
   def init_rails_class
     rails_app.module_eval do
       self.const_set('Application', Class.new) unless self.const_defined?('Application')
@@ -35,8 +38,17 @@ class GrepRoutes
     end
   end
   
-  # only the last class needs to have #call defined on it but all the objects
-  # "above" it need to be defined as Modules - basically define the object heirarchy
+  def rails_app
+    Object.const_set(class_name,Module.new) unless Object.const_defined?(class_name)
+    Object.const_get(class_name,Module.new)
+  end
+  
+  # If there are any mounted Rack apps in your routes, we'll have to grab their
+  # classes and define #call on them so they look like Rack apps to the router.
+  # 
+  # Only the last class needs to have #call defined on it but all the objects
+  # "above" it need to be defined as Modules - basically we define the object 
+  # heirarchy.
   def init_rack_apps
     rack_apps = route_file.scan(/mount (.+?\s+)/).flatten.map(&:strip)
     rack_apps.each do |class_name|
@@ -59,19 +71,19 @@ class GrepRoutes
     end
   end
   
-  def rails_app
-    Object.const_set(class_name,Module.new) unless Object.const_defined?(class_name)
-    Object.const_get(class_name,Module.new)
-  end
-  
+  # This evals the routes file. After this method is called the RouteSet will 
+  # have all of our routes inside it.
   def eval_routes
     eval(route_file)
   end
   
+  # A shortcut to the RouteSet we defined in init_rails_class.
   def route_set
     rails_app.const_get('Application', Class.new).routes
   end
   
+  # Returns an Array of Hashes to make it easier to reference parts of the route.
+  # This is stolen from the Rail's routes rake task.
   def routes
     return @routes if @routes
     
@@ -86,17 +98,27 @@ class GrepRoutes
     return @routes
   end
   
+  # This method filters the routes by matching the basic route string that will 
+  # outputted against a string or regex.
+  # 
+  # You should call this method before formatted_routes so that the offsets will 
+  # only apply to the filtered routes. Otherwise you'll have really weird output
+  # like when you run `rake routes | grep somepattern`. 
   def filter_routes(pattern)
+    @pattern = Regexp.new pattern
     @routes = routes.select{|r| "#{r[:name]} #{r[:verb]} #{r[:path]} #{r[:reqs]}".match pattern}
+    @routes
   end
   
+  # This formats the route as an Array of Strings.
+  # This is stolen from the Rail's routes rake task.
   def formatted_routes
     name_width = routes.map{ |r| r[:name].length }.max
     verb_width = routes.map{ |r| r[:verb].length }.max
     path_width = routes.map{ |r| r[:path].length }.max
-    
     routes.collect do |r|
-      "#{r[:name].rjust(name_width)} #{r[:verb].ljust(verb_width)} #{r[:path].ljust(path_width)} #{r[:reqs]}"
+      string = "#{r[:name].rjust(name_width)} #{r[:verb].ljust(verb_width)} #{r[:path].ljust(path_width)} #{r[:reqs]}"
+      string.gsub(pattern){|s| "\e[35m#{$1}\e[0m"} if pattern
     end
   end
   

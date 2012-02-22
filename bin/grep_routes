@@ -2,14 +2,14 @@
 require 'rubygems'
 $:.unshift File.expand_path('../../lib/', __FILE__)
 require "grep_routes"
+
 path = './config/routes.rb'
-# path = './spec/fixtures/routes.rb'
+path = './spec/fixtures/routes.rb'
+
 gr = GrepRoutes.new(path)
 gr.eval_routes
-if ARGV.any?
-  gr.filter_routes(ARGV[0])
-  # colorize
-  puts gr.formatted_routes.map{|r| r.gsub!(ARGV[0], "\e[35m#{ARGV[0]}\e[0m")}
-else
-  $stdout.puts gr.formatted_routes
-end
+
+# filter
+gr.filter_routes(ARGV[0]) if ARGV.any?
+
+$stdout.puts gr.formatted_routes

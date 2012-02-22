@@ -22,11 +22,15 @@ describe GrepRoutes do
     subject.route_set.routes.wont_be_empty
   end
   
-  
   it "should filter routes" do
     subject.eval_routes
     subject.filter_routes('privacy')
     subject.routes.length.must_equal 1
-    puts subject.formatted_routes
+  end
+  
+  it "should filter routes using a regex" do
+    subject.eval_routes
+    subject.filter_routes('(privacy|terms)')
+    subject.routes.length.must_equal 2
   end
 end
