@@ -24,3 +24,11 @@ Grep through your routes:
 Grep through your routes using regex:
 
     grep_routes "(privacy_policy|terms|\w+_id)"
+    
+Reporting Problems
+------------------
+Please use [Github Issues](https://github.com/ubermajestix/grep_routes/issues) to report any problems. Please include a snippet of your routes.rb file so its easier to diagnose, test, and fix the problem!
+
+Contributing
+------------
+Fork, code, send pull request.
