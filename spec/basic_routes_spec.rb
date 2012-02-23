@@ -19,7 +19,7 @@ describe GrepRoutes do
   
   it "there should be routes after we eval the routes file" do
     subject.eval_routes
-    subject.route_set.routes.wont_be_empty
+    subject.route_set.routes.length.must_be :>, 1
   end
   
   it "should filter routes" do
