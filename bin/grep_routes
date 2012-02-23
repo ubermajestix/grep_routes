@@ -4,7 +4,6 @@ $:.unshift File.expand_path('../../lib/', __FILE__)
 require "grep_routes"
 
 path = './config/routes.rb'
-path = './spec/fixtures/routes.rb'
 
 gr = GrepRoutes.new(path)
 gr.eval_routes
