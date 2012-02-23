@@ -94,7 +94,7 @@ class GrepRoutes
       {:name => route.name.to_s, :verb => route.verb.to_s, :path => route.path, :reqs => reqs}
     end
      # Skip the route if it's internal info route
-    @routes.reject! { |r| r[:path] =~ %r{/rails/info/properties|^/assets} }
+    @routes.reject! { |r| r[:path] =~ /\/rails\/info\/properties|^\/assets/ }
     return @routes
   end
   
