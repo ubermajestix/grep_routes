@@ -10,7 +10,7 @@ describe GrepRoutes do
   end
   
   it "should define the rails application class from the routes file" do
-    subject.rails_app.to_s.must_equal 'Concourse'
+    subject.rails_app.to_s.must_equal 'SomeRailsApp'
   end
   
   it "should have a shortcut to the RouteSet" do
