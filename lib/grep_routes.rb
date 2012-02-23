@@ -118,7 +118,8 @@ class GrepRoutes
     path_width = routes.map{ |r| r[:path].length }.max
     routes.collect do |r|
       string = "#{r[:name].rjust(name_width)} #{r[:verb].ljust(verb_width)} #{r[:path].ljust(path_width)} #{r[:reqs]}"
-      string.gsub(pattern){|s| "\e[35m#{$1}\e[0m"} if pattern
+      string.gsub!(pattern){|s| "\e[35m#{s}\e[0m"} if pattern
+      string
     end
   end
   
