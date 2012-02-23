@@ -32,3 +32,7 @@ Please use [Github Issues](https://github.com/ubermajestix/grep_routes/issues) t
 Contributing
 ------------
 Fork, code, send pull request.
+
+Thanks
+------
+Thanks to [@nateabbott](https://twitter.com/nateabbott) for the inspiration and [Everlater](http://www.everlater.com/professional) for allowing me to contribute to open source on their time.
