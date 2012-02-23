@@ -2,7 +2,7 @@
 $:.push File.expand_path("../lib", __FILE__)
 Gem::Specification.new do |s|
   s.name        = "grep_routes"
-  s.version     = "0.0.4"
+  s.version     = "0.0.5"
   s.authors     = ["Tyler Montgomery"]
   s.email       = ["tyler.a.montgomery@gmail.com"]
   s.homepage    = "http://github.com/ubermajestix/grep_routes"
