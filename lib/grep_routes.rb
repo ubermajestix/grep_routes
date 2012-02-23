@@ -100,26 +100,18 @@ class GrepRoutes
   end
   
   # Returns an Array of Hashes to make it easier to reference parts of the route.
-  # This is stolen from the Rail's routes rake task.
+  # This is stolen from the Rail's 3.2 RouteFormatter
   def routes
     return @routes if @routes
     
     @routes = route_set.routes.collect do |route|
-      # reqs = route.requirements.dup
-      # reqs[:to] = route.app unless route.app.class.name.to_s =~ /^ActionDispatch::Routing/
-      # reqs = reqs.empty? ? "" : reqs.inspect
-      # puts "="*45
-      # puts route.path.inspect
-      # puts route.path.spec.inspect
-      # puts "="*45
-      # {:name => route.name.to_s, :verb => route.verb.to_s, :path => route.path.to_s, :reqs => reqs}
-      
       route_reqs = route.requirements
 
 
       controller = route_reqs[:controller] || ':controller'
       action     = route_reqs[:action]     || ':action'
 
+      # TODO figure out how they're doing this engine/rackapp routeing stuff.
       # rack_app = discover_rack_app(route.app)
       # endpoint = rack_app ? rack_app.inspect : "#{controller}##{action}"
       endpoint = "#{controller}##{action}"
@@ -164,7 +156,6 @@ class GrepRoutes
   # This formats the route as an Array of Strings.
   # This is stolen from the Rail's routes rake task.
   def formatted_routes
-    puts routes.first.inspect
     name_width = routes.map{ |r| r[:name].length }.max
     verb_width = routes.map{ |r| r[:verb].length }.max
     path_width = routes.map{ |r| r[:path].length }.max
