@@ -2,7 +2,9 @@ Grep Routes
 ===========
 Running `rake routes` is super slow and a waste of time. 
 
-`grep_routes` is similar to `rake routes | grep someroute` but way faster.  
+`grep_routes` is similar to `rake routes | grep someroute` but way faster. My SuperScientificBenchmarks™ indicate 10x speed improvement over `rake routes` on big Rails projects to 3x on a fresh Rails 3.2 app, ymmv.
+
+**Note: This only works on Rails 3.1 and 3.2.**
 
 Install
 -------
@@ -32,7 +34,3 @@ Please use [Github Issues](https://github.com/ubermajestix/grep_routes/issues) t
 Contributing
 ------------
 Fork, code, send pull request.
-
-Thanks
-------
-Thanks to [@nateabbott](https://twitter.com/nateabbott) for the inspiration and [Everlater](http://www.everlater.com/professional) for allowing me to contribute to open source on their time.

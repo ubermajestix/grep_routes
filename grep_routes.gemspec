@@ -14,8 +14,16 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_dependency "activesupport"  , "~> 3.1"
-  s.add_dependency "actionpack"     , "~> 3.1"
-
-  s.add_development_dependency "minitest", "~> 2.11.2"
+  # Get the latest 3 release of activesupport and actionpack for development.
+  # Adjust the version here to test backwards compatibility.
+  # I use bundler and rvm with a gemset so if I change the versions I:
+  #
+  #     rvm gemset empty
+  #     bundle install
+  # 
+  # Is there a better way to do this?
+  # 
+  s.add_development_dependency "activesupport"  , "~> 3.1"
+  s.add_development_dependency "actionpack"     , "~> 3.1"
+  s.add_development_dependency "minitest"       , "~> 2.11.2"
 end

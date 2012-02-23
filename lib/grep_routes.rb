@@ -1,6 +1,31 @@
+# See if the user has the 3.2 or 3.1 version of active_support.
+# If not, blow up.
+begin
+  gem 'activesupport', '~> 3.2.0'
+rescue LoadError
+  begin
+    gem 'activesupport', '~> 3.1.0'
+  rescue LoadError
+    puts "You do not have activesupport ~> 3.1 installed.\nThis gem does not work with Rails 2 or 3.0"
+    exit 1
+  end
+end
 require 'active_support'
 require 'active_support/core_ext/hash/reverse_merge'
 require 'active_support/core_ext/enumerable'
+
+# See if the user has the 3.2 or 3.1 version of actionpack for action_dispatch.
+# If not, blow up.
+begin
+  gem 'actionpack', '~> 3.2.0'
+rescue LoadError
+  begin
+    gem 'actionpack', '~> 3.1.0'
+  rescue LoadError
+    puts "You do not have actionpack ~> 3.1 installed.\nThis gem does not work with Rails 2 or 3.0"
+    exit 1
+  end
+end
 require 'action_dispatch'
 
 class GrepRoutes
@@ -88,13 +113,47 @@ class GrepRoutes
     return @routes if @routes
     
     @routes = route_set.routes.collect do |route|
-      reqs = route.requirements.dup
-      reqs[:to] = route.app unless route.app.class.name.to_s =~ /^ActionDispatch::Routing/
-      reqs = reqs.empty? ? "" : reqs.inspect
-      {:name => route.name.to_s, :verb => route.verb.to_s, :path => route.path, :reqs => reqs}
+      # reqs = route.requirements.dup
+      # reqs[:to] = route.app unless route.app.class.name.to_s =~ /^ActionDispatch::Routing/
+      # reqs = reqs.empty? ? "" : reqs.inspect
+      # puts "="*45
+      # puts route.path.inspect
+      # puts route.path.spec.inspect
+      # puts "="*45
+      # {:name => route.name.to_s, :verb => route.verb.to_s, :path => route.path.to_s, :reqs => reqs}
+      
+      route_reqs = route.requirements
+
+
+      controller = route_reqs[:controller] || ':controller'
+      action     = route_reqs[:action]     || ':action'
+
+      # rack_app = discover_rack_app(route.app)
+      # endpoint = rack_app ? rack_app.inspect : "#{controller}##{action}"
+      endpoint = "#{controller}##{action}"
+      constraints = route_reqs.except(:controller, :action)
+
+      reqs = endpoint
+      reqs += " #{constraints.inspect}" unless constraints.empty?
+        
+      if route.verb.respond_to?(:source)
+        verb = route.verb.source.gsub(/[$^]/, '')
+      else
+        verb = route.verb
+      end
+      
+      if route.path.respond_to?(:spec)
+        path = route.path.spec.to_s
+      else
+        path = route.path
+      end
+      
+      # collect_engine_routes(reqs, rack_app)
+
+      {:name => route.name.to_s, :verb => verb, :path => path, :reqs => reqs }
     end
      # Skip the route if it's internal info route
-    @routes.reject! { |r| r[:path] =~ /\/rails\/info\/properties|^\/assets/ }
+    @routes. reject! { |r| r[:path] =~ /\/rails\/info\/properties|^\/assets/ }
     return @routes
   end
   
@@ -113,6 +172,7 @@ class GrepRoutes
   # This formats the route as an Array of Strings.
   # This is stolen from the Rail's routes rake task.
   def formatted_routes
+    puts routes.first.inspect
     name_width = routes.map{ |r| r[:name].length }.max
     verb_width = routes.map{ |r| r[:verb].length }.max
     path_width = routes.map{ |r| r[:path].length }.max
