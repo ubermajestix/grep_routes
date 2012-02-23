@@ -1,14 +1,10 @@
 # See if the user has the 3.2 or 3.1 version of active_support.
 # If not, blow up.
 begin
-  gem 'activesupport', '~> 3.2.0'
-rescue LoadError
-  begin
-    gem 'activesupport', '~> 3.1.0'
-  rescue LoadError
-    puts "You do not have activesupport ~> 3.1 installed.\nThis gem does not work with Rails 2 or 3.0"
-    exit 1
-  end
+  gem 'activesupport', '>= 3.1.0', '< 3.3.0'
+rescue LoadError => e
+  puts "You do not have activesupport ~> 3.1 installed.\nThis gem does not work with Rails 2 or 3.0"
+  exit 1
 end
 require 'active_support'
 require 'active_support/core_ext/hash/reverse_merge'
@@ -17,14 +13,10 @@ require 'active_support/core_ext/enumerable'
 # See if the user has the 3.2 or 3.1 version of actionpack for action_dispatch.
 # If not, blow up.
 begin
-  gem 'actionpack', '~> 3.2.0'
+  gem 'actionpack', '>= 3.1.0', '< 3.3.0'
 rescue LoadError
-  begin
-    gem 'actionpack', '~> 3.1.0'
-  rescue LoadError
-    puts "You do not have actionpack ~> 3.1 installed.\nThis gem does not work with Rails 2 or 3.0"
-    exit 1
-  end
+  puts "You do not have actionpack ~> 3.1 installed.\nThis gem does not work with Rails 2 or 3.0"
+  exit 1
 end
 require 'action_dispatch'
 
