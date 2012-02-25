@@ -33,4 +33,10 @@ describe GrepRoutes do
     subject.filter_routes('(privacy|terms)')
     subject.routes.length.must_equal 2
   end
+  
+  it "should have a bunch of routes" do
+    subject.eval_routes
+    subject.routes.length.must_equal 72
+    
+  end
 end

@@ -51,6 +51,24 @@ SomeRailsApp::Application.routes.draw do
     end
   end
   
+  # From https://github.com/francocatena/mawida_app/blob/4f8937b765f0c00dd23e3cafa93182b086f97305/config/routes.rb
+  [
+    'cost_analysis', 'create_cost_analysis',
+    'synthesis_report', 'create_synthesis_report',
+    'high_risk_weaknesses_report', 'create_high_risk_weaknesses_report',
+    'fixed_weaknesses_report', 'create_fixed_weaknesses_report',
+    'weaknesses_by_state', 'create_weaknesses_by_state',
+    'weaknesses_by_risk', 'create_weaknesses_by_risk',
+    'weaknesses_by_audit_type', 'create_weaknesses_by_audit_type'
+  ].each do |action|
+    match "conclusion_committee_reports/#{action}",
+      :as => "#{action}_conclusion_committee_reports",
+      :to => "conclusion_committee_reports##{action}"
+    match "follow_up_committee/#{action}",
+      :as => "#{action}_follow_up_committee",
+      :to => "follow_up_committee##{action}"
+  end
+  
   match 'privacy' => 'welcome#privacy'
   match 'terms'   => 'welcome#terms'
   
