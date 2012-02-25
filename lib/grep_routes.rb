@@ -9,6 +9,7 @@ end
 require 'active_support'
 require 'active_support/core_ext/hash/reverse_merge'
 require 'active_support/core_ext/enumerable'
+require 'grep_routes_mock_rack_app'
 
 # See if the user has the 3.2 or 3.1 version of actionpack for action_dispatch.
 # If not, blow up.
@@ -37,7 +38,6 @@ class GrepRoutes
     @route_file = File.read(path_to_routes_file)
     @class_name = route_file.match(/(\w+)::Application\.routes\.draw/)[1]
     self.init_rails_class
-    self.init_rack_apps
   end
   
   # To make this fast we don't load your rails app or any of your gems.
@@ -60,38 +60,48 @@ class GrepRoutes
     Object.const_get(class_name,Module.new)
   end
   
-  # If there are any mounted Rack apps in your routes, we'll have to grab their
-  # classes and define #call on them so they look like Rack apps to the router.
-  # 
-  # Only the last class needs to have #call defined on it but all the objects
-  # "above" it need to be defined as Modules - basically we define the object 
-  # heirarchy.
-  def init_rack_apps
-    rack_apps = route_file.scan(/mount (.+?\s+)/).flatten.map(&:strip)
-    rack_apps.each do |class_name|
-      objects = class_name.split("::")
-      rack_class = objects.pop
-      last_object = Object
-      objects.each do |obj|
-         last_object.const_set(obj, Module.new) unless last_object.const_defined?(obj)
-         last_object = last_object.const_get(obj)
-      end
-      make_rackapp(last_object, rack_class)
-    end
-  end
-  
   def make_rackapp(mod, obj)
-    mod.const_set(obj,Class.new) unless mod.const_defined?(obj)
-    mod.const_get(obj,Class.new).class_eval do
-      def self.call
-      end
-    end
+    mod.const_set(obj,GrepRoutesMockRackApp) unless mod.const_defined?(obj)
   end
   
   # This evals the routes file. After this method is called the RouteSet will 
   # have all of our routes inside it.
+  
   def eval_routes
-    eval(route_file)
+    # no_method_retries = 3
+    begin
+      eval(route_file)
+    # If a method is not defined on a class, we define it and try again
+    rescue NoMethodError => e
+      match = e.message.match(/undefined method `(.+)' for (.+):Class/)
+      undefined_method = match[1]
+      # TODO there has got to be a better way to do this!
+      obj = Object.const_get(match[2], Class.new).class_eval do
+        method_to_eval = <<-method_to_eval
+        def self.#{undefined_method}
+          GrepRoutesMockRackApp.new
+        end
+        method_to_eval
+        eval(method_to_eval)
+      end
+      retry
+    # If a class is not defined we define it and try again
+    rescue NameError => e
+      class_name = e.message.match(/uninitialized constant (.+)$/)[1].gsub("GrepRoutes::", '')
+      define_objects(class_name)
+      retry
+    end
+  end
+  
+  def define_objects(class_name)
+    objects = class_name.split("::")
+    rack_class = objects.pop
+    last_object = Object
+    objects.each do |obj|
+       last_object.const_set(obj, Module.new) unless last_object.const_defined?(obj)
+       last_object = last_object.const_get(obj)
+    end
+    make_rackapp(last_object, rack_class)
   end
   
   # A shortcut to the RouteSet we defined in init_rails_class.
@@ -106,7 +116,6 @@ class GrepRoutes
     
     @routes = route_set.routes.collect do |route|
       route_reqs = route.requirements
-
 
       controller = route_reqs[:controller] || ':controller'
       action     = route_reqs[:action]     || ':action'

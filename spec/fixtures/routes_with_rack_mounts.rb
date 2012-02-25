@@ -15,5 +15,16 @@ YourApp::Application.routes.draw do
     mount Preview::StoreMailer  => 'mail_view/store_mailer'
     mount Preview::BrandMailer  => 'mail_view/brand_mailer'
   end
-
+  
+  # Some Rack apps in routes.rb files from projects github
+  
+  mount Tolk::Engine => "/tolk"
+  mount Evergreen.rails, :at => '/evergreen'
+  mount WebsocketApp, :at => '/socket'
+  mount SinatraInternal => '/sinatra'
+  mount Gitstats::Shitometer => '/gitstats'
+  mount Server.new, at: "/server/new"
+  
+  # And a made up Rack app
+  mount Nested::RackApp.app, at: '/nested/rackapp'
 end
