@@ -9,6 +9,7 @@ end
 require 'active_support'
 require 'active_support/core_ext/hash/reverse_merge'
 require 'active_support/core_ext/enumerable'
+require 'active_support/inflector'
 require 'grep_routes_mock_rack_app'
 
 # See if the user has the 3.2 or 3.1 version of actionpack for action_dispatch.
@@ -30,14 +31,20 @@ class GrepRoutes
   
   attr_reader :path_to_routes_file
   attr_reader :route_file
-  attr_reader :class_name
+  attr_reader :rails_class
   attr_reader :pattern
+  attr_reader :classes
+  attr_reader :classes_with_methods
+  attr_reader :eval_failures
   
   def initialize(path_to_routes_file)
     @path_to_routes_file = path_to_routes_file
-    @route_file = File.read(path_to_routes_file)
-    @class_name = route_file.match(/(\w+)::Application\.routes\.draw/)[1]
+    @route_file = ""
+    File.open(path_to_routes_file){|f| f.each_line{|l| @route_file << l unless l.strip[0]=='#' }}
+    @rails_class = route_file.match(/(\w+)::Application\.routes\.draw/)[1]
+    @eval_failures = 0
     self.init_rails_class
+    self.init_other_classes
   end
   
   # To make this fast we don't load your rails app or any of your gems.
@@ -56,41 +63,34 @@ class GrepRoutes
   end
   
   def rails_app
-    Object.const_set(class_name,Module.new) unless Object.const_defined?(class_name)
-    Object.const_get(class_name,Module.new)
+    Object.const_set(rails_class,Module.new) unless Object.const_defined?(rails_class)
+    Object.const_get(rails_class,Module.new)
   end
   
-  def make_rackapp(mod, obj)
-    mod.const_set(obj,GrepRoutesMockRackApp) unless mod.const_defined?(obj)
-  end
-  
-  # This evals the routes file. After this method is called the RouteSet will 
-  # have all of our routes inside it.
-  
-  def eval_routes
-    # no_method_retries = 3
-    begin
-      eval(route_file)
-    # If a method is not defined on a class, we define it and try again
-    rescue NoMethodError => e
-      match = e.message.match(/undefined method `(.+)' for (.+):Class/)
-      undefined_method = match[1]
-      # TODO there has got to be a better way to do this!
-      obj = Object.const_get(match[2], Class.new).class_eval do
-        method_to_eval = <<-method_to_eval
-        def self.#{undefined_method}
-          GrepRoutesMockRackApp.new
-        end
-        method_to_eval
-        eval(method_to_eval)
-      end
-      retry
-    # If a class is not defined we define it and try again
-    rescue NameError => e
-      class_name = e.message.match(/uninitialized constant (.+)$/)[1].gsub("GrepRoutes::", '')
+  def init_other_classes
+    find_classes
+    find_classes_with_methods
+    classes.each do |class_name|
       define_objects(class_name)
-      retry
     end
+    # This is causing problems: 'Stack level too deep' during eval, the retry will
+    # catch any undefined methods and define them on the right class
+    # classes_with_methods.each do |class_and_method|
+    #     # define_methods(*class_and_method)
+    #   end
+  end
+  
+  def find_classes
+    @classes = route_file.scan(/([A-Z][a-zA-Z0-9::]*)/).flatten.reject{|c| c.match(rails_class) || c.match("Rails") }
+  end
+  
+  def find_classes_with_methods
+    match = route_file.scan(/([A-Z][a-zA-Z0-9::]*)\.([_a-z]+[_a-z0-9_<>=~@\[\]]*[=!\?]?)/)
+    match.reject!{|m| m.first.match(rails_class) || m.first.match("Rails") }
+    # parse out the first method if there's a chain
+    # TODO deal with method chains like `app.rack.server`
+    match.each{|m| m[1] = m.last.split(".").first}
+    @classes_with_methods = match
   end
   
   def define_objects(class_name)
@@ -102,6 +102,43 @@ class GrepRoutes
        last_object = last_object.const_get(obj)
     end
     make_rackapp(last_object, rack_class)
+  end
+  
+  # TODO there has got to be a better way to do this!
+  def define_methods(class_name, method_name)
+    class_name.constantize.class_eval do
+      method_to_eval = <<-method_to_eval
+      def self.#{method_name}
+        GrepRoutesMockRackApp.new
+      end
+      method_to_eval
+      eval(method_to_eval)
+    end
+  end
+  
+  def make_rackapp(mod, obj)
+    mod.const_set(obj,GrepRoutesMockRackApp) unless mod.const_defined?(obj)
+  end
+  
+  # This evals the routes file. After this method is called the RouteSet will 
+  # have all of our routes inside it.
+  def eval_routes
+    begin
+      eval(route_file)
+    # If a method is not defined on a class, we define it and try again
+    rescue NoMethodError => e
+      @eval_failures += 1
+      match = e.message.match(/undefined method `(.+)' for (.+):Class/)
+      undefined_method = match[1]
+      define_methods(match[2], undefined_method)
+      retry
+    # If a class is not defined we define it and try again
+    rescue NameError => e
+      @eval_failures += 1
+      class_name = e.message.match(/uninitialized constant (.+)$/)[1].gsub("GrepRoutes::", '')
+      define_objects(class_name)
+      retry
+    end
   end
   
   # A shortcut to the RouteSet we defined in init_rails_class.

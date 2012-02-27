@@ -24,4 +24,8 @@ describe GrepRoutes do
     subject.routes.map{|r| r[:path]}.must_include "/server/new"
   end
   
+  it "should not have any eval failures and be fast" do
+    subject.eval_failures.must_equal 0
+  end
+  
 end
